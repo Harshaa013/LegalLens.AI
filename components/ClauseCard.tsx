@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Clause, RiskLevel } from '../types';
 import { RiskBadge } from './RiskBadge';
-import { AlertTriangle, HelpCircle, MessageCircle, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { AlertTriangle, HelpCircle, MessageCircle, ChevronDown, ChevronUp, User, Scale } from 'lucide-react';
 import { askClauseQuestion } from '../services/geminiService';
 
 interface ClauseCardProps {
@@ -173,6 +173,13 @@ export const ClauseCard: React.FC<ClauseCardProps> = ({ clause, onUpdate }) => {
               </p>
             )}
           </div>
+
+          {/* Legal Suggestion Banner */}
+          <div className="mt-4 p-3 bg-indigo-50 text-indigo-800 text-sm rounded-lg flex items-start border border-indigo-100">
+             <Scale className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
+             <span className="font-medium">Suggestion: If this looks serious, consult a lawyer.</span>
+          </div>
+
         </div>
       )}
     </div>

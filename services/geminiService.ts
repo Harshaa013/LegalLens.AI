@@ -30,7 +30,7 @@ const analysisSchema: Schema = {
         properties: {
           id: { type: Type.STRING, description: "A unique identifier for the clause (e.g., 'clause-1')." },
           text: { type: Type.STRING, description: "The original text of the clause." },
-          explanation: { type: Type.STRING, description: "A simplified explanation of what this clause means." },
+          explanation: { type: Type.STRING, description: "A simple English explanation of what this clause means." },
           riskLevel: {
             type: Type.STRING,
             enum: ["Low", "Medium", "High"],
@@ -41,7 +41,7 @@ const analysisSchema: Schema = {
             items: { type: Type.STRING },
             description: "Specific words or phrases in the text that trigger the risk.",
           },
-          reason: { type: Type.STRING, description: "Why this clause is considered risky." },
+          reason: { type: Type.STRING, description: "The type of risk (e.g., 'Payment Risk') and why it is risky." },
         },
         required: ["id", "text", "explanation", "riskLevel", "riskyKeywords", "reason"],
       },
@@ -115,26 +115,27 @@ export const analyzeContract = async (
               IF IT IS A CONTRACT, strictly evaluate risk levels based on the following criteria:
               
               1. HIGH RISK (Red):
-                 - Unlimited liability for the user.
-                 - Unilateral termination without cause or reasonable notice.
-                 - Complete waiver of legal rights (e.g., jury trial, class action).
-                 - Automatic renewal with difficult cancellation terms.
-                 - Hidden fees or variable pricing without caps.
+                 - Unlimited liability.
+                 - Unilateral termination without cause.
+                 - Waiver of rights (jury trial, class action).
+                 - Automatic renewal with difficult cancellation.
               
               2. MEDIUM RISK (Amber):
-                 - Ambiguous terms that could be interpreted against the user.
-                 - Slightly unbalanced indemnification clauses.
-                 - Long notice periods for cancellation.
-                 - Restrictions on activities that are not standard (e.g., strict non-competes for freelancers).
+                 - Ambiguous terms.
+                 - Unbalanced indemnification.
+                 - Long notice periods.
               
               3. LOW RISK (Green):
-                 - Standard boilerplate terms.
-                 - Mutual obligations and termination rights.
-                 - Clear, fixed pricing.
-                 - Reasonable data usage and privacy policies.
+                 - Standard boilerplate.
+                 - Mutual obligations.
+                 - Clear pricing.
 
-              Identify key clauses, assign them a risk level based on the criteria above, and provide a plain English summary. 
-              
+              Identify key clauses. For each clause:
+              1. **Simple English**: Explain the clause in plain, simple English suitable for a 6th grader.
+              2. **Risk Type**: In the 'reason' field, START with the type of risk (e.g., "Payment Risk", "Termination Risk", "Data Privacy Risk", "Liability Risk").
+              3. **No Statutes**: Do NOT mention specific section numbers of any external law, statute, or act (e.g., do not say "Under UCC 2-207" or "Section 10 of Contract Act"). If you must refer to legal concepts, use "general contract law principles".
+              4. **Disclaimer**: Implicitly suggest in the explanation that for specific legal interpretations, one should consult a lawyer.
+
               Return the result in the specified JSON format.`,
             },
           ],
@@ -143,7 +144,7 @@ export const analyzeContract = async (
       config: {
         responseMimeType: "application/json",
         responseSchema: analysisSchema,
-        temperature: 0.2, // Low temperature for more deterministic analysis
+        temperature: 0.2,
       },
     });
 
@@ -179,7 +180,7 @@ export const askClauseQuestion = async (
         
         User Question: "${question}"
         
-        Answer the question simply and clearly for a layperson. Keep it brief (under 50 words).
+        Answer the question simply and clearly for a layperson. Do NOT cite specific external law sections. Keep it brief.
       `,
     });
 
@@ -212,18 +213,17 @@ export const sendChatMessage = async (
   });
 
   const systemInstruction = `
-    You are LegalLens AI, a highly precise legal assistant specialized in contract analysis.
+    You are LegalLens AI, a helpful legal assistant specialized in contract analysis.
     
     ${contractContext ? `
     CURRENT CONTRACT CONTEXT:
     ${contractContext}
     
-    CRITICAL INSTRUCTIONS FOR ACCURACY:
-    1. **Cite Sections:** When answering, you MUST reference specific section numbers, article headers, or clause titles found in the "Full Text" if available. (e.g., "According to Section 4.2...", "As stated in the Termination Clause...").
-    2. **Precise Terminology:** Use correct legal terminology (e.g., "indemnification", "force majeure", "jurisdiction") but immediately explain it in simple terms for the user.
-    3. **Grounding:** Do not invent terms. If a specific term (like "Notice Period") is not in the contract, say it is not explicitly stated.
-    4. **Scope:** Answer strictly based on the provided text.
-    5. **Disclaimer:** While you are precise, you are an AI. Always conclude serious risk assessments with a recommendation to consult a qualified attorney.
+    INSTRUCTIONS:
+    1. **Cite Contract Sections:** You MAY reference specific section numbers found within the document itself (e.g., "Clause 4.1 of this agreement").
+    2. **NO External Statutes:** Do NOT cite specific section numbers of external laws, acts, or codes (e.g., do NOT say "Section 23 of the Contract Act"). Use "general contract law principles" instead.
+    3. **Simple English:** Explain concepts simply.
+    4. **Disclaimer:** Always conclude serious risk assessments with a recommendation to consult a qualified attorney.
     ` : `
     INSTRUCTIONS:
     - You are currently not viewing a specific contract.
@@ -238,7 +238,7 @@ export const sendChatMessage = async (
       contents: contents,
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.3, // Lower temperature for more factual responses
+        temperature: 0.3,
       },
     });
 
@@ -278,14 +278,9 @@ export const compareContracts = async (
         ${contractsContext}
         
         Task:
-        1. Determine which contract is safest/best for the user (Lower risk score, fewer high-risk clauses).
-        2. Provide a short reasoning paragraph explaining the choice.
-        3. List key differences in bullet points.
-        
-        CRITICAL INSTRUCTION: 
-        - Refer to contracts strictly by their exact FILE NAMES as provided in the "DOCUMENT NAME" field.
-        - DO NOT use generic placeholders like "Contract 1", "Contract 2", "Contract A", or "The first contract".
-        - Example: "Employment_Agreement.pdf has a non-compete, while Freelance_Contract.docx does not."
+        1. Determine which contract is safest/best for the user.
+        2. Provide a short reasoning paragraph.
+        3. List key differences.
         
         Return JSON matching the schema.
       `,
@@ -342,11 +337,9 @@ export const queryComparisonDifference = async (
     The user is specifically asking about this identified difference: "${focusedDifference}"
     
     INSTRUCTIONS:
-    - If the user asks for a brief or explanation, explain strictly how this specific difference manifests in the provided documents.
-    - Mention the documents by their exact file names.
-    - Explain the practical implication of this difference (e.g., "This means under Contract X you are liable for Y...").
-    - Keep answers helpful, concise, and easy to understand for a non-lawyer.
-  `;
+    - Explain simply how this difference manifests.
+    - Do NOT cite external law sections.
+    `;
 
   try {
     const response = await ai.models.generateContent({
@@ -360,6 +353,6 @@ export const queryComparisonDifference = async (
     return response.text || "I couldn't generate a response.";
   } catch (error) {
     console.error("Error in comparison chat:", error);
-    return "Sorry, I'm having trouble connecting right now.";
+    return "Sorry, I'm having trouble connecting right now. Please try again.";
   }
 };

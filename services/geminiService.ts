@@ -74,6 +74,53 @@ const comparisonSchema: Schema = {
   required: ["recommendedId", "reasoning", "keyDifferences"],
 };
 
+// Helper to handle API errors consistently
+const handleGenAIError = (error: any): never => {
+  console.error("GenAI Error:", error);
+  let errorMessage = "An unexpected error occurred during processing.";
+
+  if (error.message) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('429') || msg.includes('quota') || msg.includes('resource exhausted')) {
+      errorMessage = "AI usage limit exceeded. Please try again in a few moments.";
+    } else if (msg.includes('403') || msg.includes('key') || msg.includes('permission')) {
+      errorMessage = "Authentication failed. Please check the system configuration.";
+    } else if (msg.includes('413') || msg.includes('too large')) {
+      errorMessage = "The document is too large for the AI to process.";
+    } else if (msg.includes('503') || msg.includes('overloaded') || msg.includes('unavailable')) {
+      errorMessage = "AI service is temporarily unavailable. Please retry.";
+    } else if (msg.includes('safety') || msg.includes('blocked')) {
+      errorMessage = "The document was flagged by safety settings and could not be analyzed.";
+    } else if (msg.includes('json') || msg.includes('parse')) {
+      errorMessage = "Received an invalid response format from AI. Please retry.";
+    } else {
+      errorMessage = `Processing failed: ${error.message}`;
+    }
+  }
+  
+  throw new Error(errorMessage);
+};
+
+// Helper to clean and parse JSON that might be wrapped in markdown
+const parseJSONResponse = <T>(text: string | undefined): T => {
+  if (!text) {
+    throw new Error("Empty response from AI service.");
+  }
+
+  // Remove Markdown code block syntax if present (e.g. ```json ... ```)
+  let cleanText = text.trim();
+  if (cleanText.startsWith('```')) {
+    cleanText = cleanText.replace(/^```(json)?\n?/i, '').replace(/```$/, '');
+  }
+
+  try {
+    return JSON.parse(cleanText) as T;
+  } catch (e) {
+    console.error("Failed to parse JSON:", cleanText);
+    throw new Error("Failed to parse AI response. The model output was not valid JSON.");
+  }
+};
+
 export const analyzeContract = async (
   base64Data: string,
   mimeType: string
@@ -148,18 +195,10 @@ export const analyzeContract = async (
       },
     });
 
-    const text = response.text;
-    if (!text) {
-        throw new Error("No response from AI");
-    }
-    
-    // Parse the JSON response
-    const analysis = JSON.parse(text) as ContractAnalysis;
-    return analysis;
+    return parseJSONResponse<ContractAnalysis>(response.text);
 
   } catch (error) {
-    console.error("Error analyzing contract:", error);
-    throw error;
+    handleGenAIError(error);
   }
 };
 
@@ -187,7 +226,8 @@ export const askClauseQuestion = async (
     return response.text || "Could not generate an answer.";
   } catch (error) {
     console.error("Error asking question:", error);
-    return "Sorry, I couldn't answer that right now.";
+    // Return a soft error for chat interactions instead of throwing
+    return "Sorry, I couldn't answer that right now due to a connection issue.";
   }
 };
 
@@ -290,10 +330,9 @@ export const compareContracts = async (
       },
     });
 
-    return JSON.parse(response.text!) as ComparisonResult;
+    return parseJSONResponse<ComparisonResult>(response.text);
   } catch (error) {
-    console.error("Error comparing contracts:", error);
-    throw error;
+    handleGenAIError(error);
   }
 };
 

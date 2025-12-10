@@ -43,13 +43,13 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh]">
-      <div className="w-full max-w-md bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-scale-in border border-white/50">
-        <div className="bg-gradient-to-r from-indigo-600 to-indigo-700 p-8 text-center relative overflow-hidden">
+      <div className="w-full max-w-md bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-scale-in border border-slate-700/50">
+        <div className="bg-gradient-to-r from-indigo-700 to-indigo-900 p-8 text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
           <h2 className="text-3xl font-bold text-white mb-2 relative z-10 animate-slide-down">
             {isLogin ? 'Welcome Back' : 'Get Started'}
           </h2>
-          <p className="text-indigo-100 relative z-10 animate-fade-in" style={{animationDelay: '0.2s'}}>
+          <p className="text-indigo-200 relative z-10 animate-fade-in" style={{animationDelay: '0.2s'}}>
             {isLogin ? 'Sign in to access your contracts.' : 'Create an account to analyze contracts.'}
           </p>
         </div>
@@ -57,7 +57,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
         <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 text-red-700 text-sm rounded-lg flex items-center border border-red-200 animate-fade-in">
+              <div className="p-3 bg-red-900/20 text-red-300 text-sm rounded-lg flex items-center border border-red-900/30 animate-fade-in">
                 <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
                 {error}
               </div>
@@ -65,10 +65,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
             {!isLogin && (
               <div className="animate-slide-up" style={{animationDelay: '0.1s'}}>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Full Name</label>
                 <input
                   type="text"
-                  className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-white"
+                  className="w-full px-4 py-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-slate-700 placeholder-slate-500"
                   placeholder="John Doe"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -77,10 +77,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             )}
             
             <div className="animate-slide-up" style={{animationDelay: '0.2s'}}>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Email Address</label>
               <input
                 type="email"
-                className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-white"
+                className="w-full px-4 py-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-slate-700 placeholder-slate-500"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -88,10 +88,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
             </div>
             
             <div className="animate-slide-up" style={{animationDelay: '0.3s'}}>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
               <input
                 type="password"
-                className="w-full px-4 py-2 bg-slate-50 text-slate-900 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-white"
+                className="w-full px-4 py-2 bg-slate-800 text-slate-100 border border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all hover:bg-slate-700 placeholder-slate-500"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -100,7 +100,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
 
             <button
               type="submit"
-              className="w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-[0.98] animate-slide-up"
+              className="w-full flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition-all shadow-lg shadow-indigo-900/50 hover:shadow-indigo-800/50 hover:scale-[1.02] active:scale-[0.98] animate-slide-up"
               style={{animationDelay: '0.4s'}}
             >
               {isLogin ? (
@@ -118,7 +118,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin }) => {
           <div className="mt-6 text-center animate-fade-in" style={{animationDelay: '0.5s'}}>
             <button
               onClick={() => { setIsLogin(!isLogin); setError(null); }}
-              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium hover:underline transition-colors"
+              className="text-indigo-400 hover:text-indigo-300 text-sm font-medium hover:underline transition-colors"
             >
               {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
             </button>

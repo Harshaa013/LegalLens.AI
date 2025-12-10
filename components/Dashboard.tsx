@@ -110,15 +110,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
     <div className="space-y-8 relative">
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 animate-slide-down">
         <div>
-           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Your Contracts</h1>
-           <p className="text-slate-500 mt-1 font-medium">Manage, review, and compare your documents.</p>
+           <h1 className="text-3xl font-bold text-slate-100 tracking-tight">Your Contracts</h1>
+           <p className="text-slate-400 mt-1 font-medium">Manage, review, and compare your documents.</p>
         </div>
         <div className="flex items-center gap-3">
             {selectedIds.length > 0 && (
                  <button 
                     onClick={handleCompareClick}
                     disabled={selectedIds.length < 2}
-                    className="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-900 transition-all flex items-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed animate-scale-in"
+                    className="bg-slate-800 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-slate-700 transition-all flex items-center shadow-lg disabled:opacity-50 disabled:cursor-not-allowed animate-scale-in"
                  >
                     <SplitSquareHorizontal className="w-5 h-5 mr-2" /> 
                     Compare ({selectedIds.length}/{MAX_COMPARE})
@@ -126,7 +126,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
             )}
             <button 
             onClick={onNewUpload}
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all flex items-center shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 shrink-0"
+            className="bg-indigo-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all flex items-center shadow-lg shadow-indigo-900/30 hover:shadow-indigo-900/50 hover:-translate-y-0.5 shrink-0"
             >
             <Plus className="w-5 h-5 mr-2" /> New Analysis
             </button>
@@ -137,11 +137,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
         {/* Search Bar */}
         <div className="relative flex-grow group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+            <Search className="h-5 w-5 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
           </div>
           <input
             type="text"
-            className="block w-full pl-10 pr-3 py-3 border border-slate-200 rounded-xl leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm transition-all hover:border-slate-300"
+            className="block w-full pl-10 pr-3 py-3 border border-slate-700 rounded-xl leading-5 bg-slate-900 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm transition-all hover:border-slate-600"
             placeholder="Search contracts..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -153,7 +153,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
            <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="appearance-none w-full bg-white border border-slate-200 text-slate-700 py-3 pl-4 pr-10 rounded-xl leading-5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm cursor-pointer hover:border-slate-300 transition-colors"
+              className="appearance-none w-full bg-slate-900 border border-slate-700 text-slate-300 py-3 pl-4 pr-10 rounded-xl leading-5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm cursor-pointer hover:border-slate-600 transition-colors"
             >
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
@@ -162,7 +162,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
               <option value="name_asc">Name: A-Z</option>
               <option value="name_desc">Name: Z-A</option>
            </select>
-           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+           <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
               <ArrowUpDown className="h-4 w-4" />
            </div>
         </div>
@@ -171,7 +171,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
            {[1,2,3].map(i => (
-             <div key={i} className="h-48 bg-white border border-slate-200 rounded-xl animate-pulse shadow-sm"></div>
+             <div key={i} className="h-48 bg-slate-900 border border-slate-800 rounded-xl animate-pulse shadow-sm"></div>
            ))}
         </div>
       ) : (
@@ -181,15 +181,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
                 <div className="animate-slide-up" style={{animationDelay: '0.2s'}}>
                     <div className="flex items-center justify-between mb-4">
                          <div className="flex flex-col">
-                            <h2 className="text-lg font-bold text-slate-800 flex items-center">
+                            <h2 className="text-lg font-bold text-slate-200 flex items-center">
                                 <History className="w-5 h-5 mr-2 text-indigo-500" />
-                                Recent Analyses (this browser only)
+                                Recent Analyses
                             </h2>
-                            <p className="text-xs text-slate-400 mt-1">Stored locally. Clearing cache will remove this history.</p>
+                            <p className="text-xs text-slate-500 mt-1">Stored locally. Clearing cache will remove this history.</p>
                          </div>
                          <button 
                             onClick={handleClearHistory}
-                            className="text-xs text-red-500 hover:text-red-700 flex items-center font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+                            className="text-xs text-red-500 hover:text-red-400 flex items-center font-medium px-3 py-1.5 rounded-lg hover:bg-red-900/10 transition-colors"
                          >
                             <Trash2 className="w-3 h-3 mr-1" />
                             Clear history
@@ -201,18 +201,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
                             <div 
                                 key={recent.id}
                                 onClick={() => handleSelectRecent(recent)}
-                                className="bg-white/80 backdrop-blur-sm border border-slate-200 rounded-lg p-4 hover:border-indigo-300 hover:shadow-md cursor-pointer transition-all group hover-lift animate-scale-in"
+                                className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-lg p-4 hover:border-indigo-500/50 hover:shadow-md cursor-pointer transition-all group hover-lift animate-scale-in"
                                 style={{animationDelay: `${index * 50}ms`}}
                             >
                                 <div className="flex justify-between items-start mb-2">
-                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${recent.sourceType === 'file' ? 'bg-indigo-50 text-indigo-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${recent.sourceType === 'file' ? 'bg-indigo-900/30 text-indigo-400' : 'bg-emerald-900/30 text-emerald-400'}`}>
                                         {recent.sourceType === 'file' ? 'From File' : 'From Text'}
                                     </div>
-                                    <div className="text-[10px] text-slate-400 font-medium">
+                                    <div className="text-[10px] text-slate-500 font-medium">
                                         {new Date(recent.createdAt).toLocaleDateString()}
                                     </div>
                                 </div>
-                                <h3 className="font-semibold text-slate-800 truncate mb-1" title={recent.name}>{recent.name}</h3>
+                                <h3 className="font-semibold text-slate-200 truncate mb-1" title={recent.name}>{recent.name}</h3>
                                 <div className="flex items-center gap-2 mt-3">
                                     <RiskBadge level={recent.riskSummary as RiskLevel} size="sm" />
                                     <div className="text-xs font-semibold text-slate-500">Score: {recent.riskScore}</div>
@@ -225,22 +225,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
 
             {/* Main Saved Contracts */}
             <div className="animate-slide-up" style={{animationDelay: '0.3s'}}>
-                <h2 className="text-lg font-bold text-slate-800 mb-4">Saved Documents</h2>
+                <h2 className="text-lg font-bold text-slate-200 mb-4">Saved Documents</h2>
                 {filteredContracts.length === 0 ? (
                     contracts.length === 0 ? (
-                        <div className="text-center py-16 bg-white/60 rounded-2xl border-2 border-dashed border-slate-300 hover:border-indigo-300 transition-colors">
-                            <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400 group-hover:text-indigo-500 transition-colors">
+                        <div className="text-center py-16 bg-slate-900/60 rounded-2xl border-2 border-dashed border-slate-700 hover:border-indigo-500/30 transition-colors">
+                            <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500 group-hover:text-indigo-400 transition-colors">
                             <FileText className="w-8 h-8" />
                             </div>
-                            <h3 className="text-lg font-medium text-slate-900">No contracts yet</h3>
+                            <h3 className="text-lg font-medium text-slate-200">No contracts yet</h3>
                             <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload your first contract to get AI-powered insights and risk analysis.</p>
                         </div>
                     ) : (
                         <div className="text-center py-20">
-                            <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
+                            <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-500">
                             <Search className="w-6 h-6" />
                             </div>
-                            <h3 className="text-slate-900 font-medium">No results found</h3>
+                            <h3 className="text-slate-200 font-medium">No results found</h3>
                             <p className="text-slate-500 mt-1">No contracts match "{searchQuery}"</p>
                         </div>
                     )
@@ -252,8 +252,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
                         <div 
                             key={contract.id} 
                             onClick={() => onSelectContract(contract)}
-                            className={`bg-white p-6 rounded-xl shadow-sm border cursor-pointer group flex flex-col h-full hover-lift animate-slide-up relative
-                                ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-200 hover:border-indigo-200'}
+                            className={`bg-slate-900 p-6 rounded-xl shadow-sm border cursor-pointer group flex flex-col h-full hover-lift animate-slide-up relative
+                                ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-slate-800 hover:border-indigo-500/30'}
                             `}
                             style={{animationDelay: `${index * 50 + 200}ms`}}
                         >
@@ -265,14 +265,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
                             `}
                         >
                             {isSelected ? (
-                                <CheckSquare className="w-6 h-6 text-indigo-600" fill="currentColor" color="white" />
+                                <CheckSquare className="w-6 h-6 text-indigo-500" fill="currentColor" color="white" />
                             ) : (
-                                <Square className="w-6 h-6 text-slate-300 hover:text-indigo-400" />
+                                <Square className="w-6 h-6 text-slate-600 hover:text-indigo-400" />
                             )}
                         </div>
 
                         <div className="flex items-start justify-between mb-4">
-                            <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-indigo-200">
+                            <div className="p-3 bg-indigo-900/30 text-indigo-400 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-sm group-hover:shadow-indigo-500/30">
                                 <FileText className="w-6 h-6 transform group-hover:scale-110 transition-transform" />
                             </div>
                             {contract.analysis && (
@@ -280,22 +280,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onNewUpload, onSelec
                             )}
                         </div>
                         
-                        <h3 className="font-semibold text-slate-900 mb-2 truncate pr-8" title={contract.fileName}>
+                        <h3 className="font-semibold text-slate-100 mb-2 truncate pr-8" title={contract.fileName}>
                             {contract.fileName}
                         </h3>
                         
                         {contract.analysis && (
-                            <p className="text-slate-500 text-sm line-clamp-2 flex-grow">
+                            <p className="text-slate-400 text-sm line-clamp-2 flex-grow">
                             {contract.analysis.summary}
                             </p>
                         )}
                         
-                        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                        <div className="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-500">
                             <span className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
                             {new Date(contract.uploadDate).toLocaleDateString()}
                             </span>
-                            <span className="group-hover:translate-x-1 transition-transform duration-300 text-indigo-500 opacity-0 group-hover:opacity-100 flex items-center font-medium">
+                            <span className="group-hover:translate-x-1 transition-transform duration-300 text-indigo-400 opacity-0 group-hover:opacity-100 flex items-center font-medium">
                                 View Analysis <ChevronRight className="w-4 h-4 ml-1" />
                             </span>
                         </div>

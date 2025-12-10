@@ -91,7 +91,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
     return (
       <button
         onClick={toggleOpen}
-        className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110 z-[100] flex items-center justify-center ring-4 ring-white/30"
+        className="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110 z-[100] flex items-center justify-center ring-4 ring-indigo-900/50"
         title="Open Support Chat"
       >
         <MessageCircle className="w-6 h-6" />
@@ -101,13 +101,13 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
 
   return (
     <div 
-        className={`fixed bottom-6 right-6 bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden z-[100] transition-all duration-300 flex flex-col
+        className={`fixed bottom-6 right-6 bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden z-[100] transition-all duration-300 flex flex-col
         ${isMinimized ? 'w-72 h-14' : 'w-80 md:w-96 h-[500px] max-h-[80vh]'}
         `}
     >
       {/* Header */}
       <div 
-        className="bg-indigo-600 p-4 flex items-center justify-between cursor-pointer"
+        className="bg-indigo-700 p-4 flex items-center justify-between cursor-pointer"
         onClick={() => setIsMinimized(!isMinimized)}
       >
         <div className="flex items-center text-white">
@@ -128,7 +128,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
       {/* Messages */}
       {!isMinimized && (
         <>
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-950">
             {messages.map((msg, idx) => (
               <div 
                 key={idx} 
@@ -138,7 +138,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
                   className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
                     msg.role === 'user' 
                       ? 'bg-indigo-600 text-white rounded-tr-none' 
-                      : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none shadow-sm'
+                      : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-none shadow-sm'
                   }`}
                 >
                   {msg.text}
@@ -147,7 +147,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
             ))}
             {isLoading && (
                <div className="flex justify-start">
-                  <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex space-x-1">
+                  <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm flex space-x-1">
                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
                     <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
@@ -158,7 +158,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
           </div>
 
           {/* Input */}
-          <div className="p-3 bg-white border-t border-slate-200">
+          <div className="p-3 bg-slate-900 border-t border-slate-700">
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -166,7 +166,7 @@ export const ChatBot: React.FC<ChatBotProps> = ({ contract }) => {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 placeholder="Ask a legal question..."
-                className="flex-1 px-4 py-2 bg-white text-slate-900 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 bg-slate-950 text-slate-100 border border-slate-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-slate-500"
               />
               <button
                 onClick={handleSend}

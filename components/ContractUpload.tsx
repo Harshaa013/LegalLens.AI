@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, File as FileIcon, Loader2, AlertCircle, Trash2, Play, Sparkles, CheckCircle, ArrowRight } from 'lucide-react';
+import { Upload, File as FileIcon, Loader2, AlertCircle, Trash2, Play, Sparkles, CheckCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { analyzeContract } from '../services/geminiService';
 import { storageService } from '../services/storageService';
 import { Contract, User, RecentAnalysis } from '../types';
@@ -28,18 +28,29 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
   const validateAndAddFiles = (fileList: FileList | File[]) => {
     const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
     const newFiles: FileUploadState[] = [];
+    let fileError = null;
 
     Array.from(fileList).forEach(file => {
       if (!validTypes.includes(file.type)) {
-        setGlobalError(`File "${file.name}" has an invalid format. Please upload PDF or Images.`);
+        fileError = `File "${file.name}" has an invalid format. Please upload PDF or Images.`;
         return;
+      }
+      // Simple size check (e.g. 20MB limit which roughly fits many base64 payloads before API limits)
+      if (file.size > 20 * 1024 * 1024) {
+          fileError = `File "${file.name}" is too large (>20MB).`;
+          return;
       }
       newFiles.push({ file, status: 'pending' });
     });
 
+    if (fileError) {
+        setGlobalError(fileError);
+    } else {
+        setGlobalError(null);
+    }
+
     if (newFiles.length > 0) {
         setFiles(prev => [...prev, ...newFiles]);
-        setGlobalError(null);
     }
   };
 
@@ -52,7 +63,7 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
                   const base64String = reader.result as string;
                   resolve(base64String.split(',')[1]);
               };
-              reader.onerror = reject;
+              reader.onerror = () => reject(new Error("Failed to read file"));
               reader.readAsDataURL(fileState.file);
           });
 
@@ -73,7 +84,13 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
           };
 
           // Save
-          await storageService.saveContract(newContract);
+          try {
+            await storageService.saveContract(newContract);
+          } catch (storageError: any) {
+             console.error("Storage error", storageError);
+             // We still consider this a partial success as the user can see results, but we warn them
+             throw new Error("Analyzed successfully but failed to save to browser storage. Check available disk space.");
+          }
 
           // Cache
           const recentAnalysis: RecentAnalysis = {
@@ -91,10 +108,26 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
           storageService.saveRecentAnalysis(recentAnalysis);
 
           return { ...fileState, status: 'success', contract: newContract };
-      } catch (e) {
+      } catch (e: any) {
           console.error("Error processing file", fileState.file.name, e);
-          return { ...fileState, status: 'error', error: 'Failed to analyze' };
+          return { 
+              ...fileState, 
+              status: 'error', 
+              error: e.message || 'Failed to analyze due to an unexpected error.' 
+          };
       }
+  };
+
+  const retryFile = async (index: number) => {
+      const fileToRetry = files[index];
+      if (!fileToRetry) return;
+      
+      // Update state to processing to show spinner immediately
+      setFiles(prev => prev.map((f, i) => i === index ? { ...f, status: 'processing', error: undefined } : f));
+      
+      const result = await processFile({ ...fileToRetry, status: 'pending', error: undefined });
+      
+      setFiles(prev => prev.map((f, i) => i === index ? result : f));
   };
 
   const handleAnalyzeAll = async () => {
@@ -102,36 +135,39 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
     // If multiple, batch flow
     
     // Mark pending as processing
-    setFiles(prev => prev.map(f => f.status === 'pending' ? { ...f, status: 'processing' } : f));
+    setFiles(prev => prev.map(f => f.status === 'pending' || f.status === 'error' ? { ...f, status: 'processing', error: undefined } : f));
 
-    const pendingFiles = files.filter(f => f.status === 'pending');
+    // Only process files that are not already successful
+    const filesToProcess = files.map((f, index) => ({ file: f, index })).filter(item => item.file.status !== 'success');
     
-    // Process sequentially to avoid rate limits on demo keys, or parallel if robust
-    // Using simple Promise.all for parallel (careful with rate limits)
-    // Let's do parallel for UX speed in demo
-    
-    const results = await Promise.all(pendingFiles.map(processFile));
+    // Process in parallel
+    const promises = filesToProcess.map(async (item) => {
+        const result = await processFile(item.file);
+        return { index: item.index, result };
+    });
+
+    const results = await Promise.all(promises);
     
     // Update state with results
     setFiles(prev => {
         const next = [...prev];
-        results.forEach(res => {
-            const idx = next.findIndex(f => f.file === res.file);
-            if (idx !== -1) next[idx] = res;
+        results.forEach(({ index, result }) => {
+            next[index] = result;
         });
         return next;
     });
 
     // Navigation Logic
     // If only 1 file total and it was successful, go to it
-    if (files.length === 1 && results[0].status === 'success' && results[0].contract) {
-        onUploadComplete(results[0].contract);
+    if (files.length === 1 && results.length === 1 && results[0].result.status === 'success' && results[0].result.contract) {
+        onUploadComplete(results[0].result.contract);
     } 
     // Otherwise stay on page showing success marks
   };
 
   const handleRemoveFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+    if (files.length <= 1) setGlobalError(null);
   };
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -154,6 +190,7 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
 
   const hasProcessing = files.some(f => f.status === 'processing');
   const allSuccess = files.length > 0 && files.every(f => f.status === 'success');
+  const hasErrors = files.some(f => f.status === 'error');
 
   return (
     <div className="w-full max-w-3xl mx-auto animate-scale-in">
@@ -162,8 +199,8 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
             <div 
               className={`border-2 border-dashed rounded-3xl p-10 transition-all duration-300 flex flex-col items-center justify-center text-center cursor-pointer
                 ${isDragging 
-                  ? 'border-indigo-500 bg-indigo-50 scale-[1.02] shadow-xl' 
-                  : 'border-slate-300 bg-white hover:border-indigo-400 hover:bg-slate-50 hover:shadow-lg'
+                  ? 'border-indigo-500 bg-indigo-900/20 scale-[1.02] shadow-xl' 
+                  : 'border-slate-700 bg-slate-900 hover:border-indigo-500/50 hover:bg-slate-800 hover:shadow-lg'
                 }
               `}
               onDragOver={onDragOver}
@@ -178,16 +215,16 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
                 onChange={(e) => e.target.files && validateAndAddFiles(e.target.files)}
                 disabled={hasProcessing}
               />
-              <div className={`p-4 rounded-full mb-4 text-indigo-600 transition-all duration-500 ${isDragging ? 'bg-indigo-200 animate-bounce' : 'bg-indigo-50 group-hover:scale-110'}`}>
+              <div className={`p-4 rounded-full mb-4 text-indigo-400 transition-all duration-500 ${isDragging ? 'bg-indigo-900/40 animate-bounce' : 'bg-indigo-900/20 group-hover:scale-110'}`}>
                  <Upload className="w-8 h-8" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">
+              <h3 className="text-xl font-bold text-slate-100 mb-2">
                 Drop your contracts here
               </h3>
-              <p className="text-slate-500 mb-6 max-w-sm mx-auto text-sm">
+              <p className="text-slate-400 mb-6 max-w-sm mx-auto text-sm">
                 Upload multiple PDFs or Images to analyze them individually or compare them.
               </p>
-              <button className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-200 pointer-events-none text-sm">
+              <button className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-900/30 pointer-events-none text-sm">
                 Select Files
               </button>
             </div>
@@ -195,51 +232,70 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
 
       {/* File List */}
       {files.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-slide-up">
-              <div className="p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                  <h4 className="font-semibold text-slate-700">Selected Documents ({files.length})</h4>
-                  {files.some(f => f.status === 'pending') && (
+          <div className="bg-slate-900 rounded-2xl shadow-sm border border-slate-700 overflow-hidden animate-slide-up">
+              <div className="p-4 bg-slate-800/50 border-b border-slate-700 flex justify-between items-center">
+                  <h4 className="font-semibold text-slate-300">Selected Documents ({files.length})</h4>
+                  {files.some(f => f.status !== 'processing') && (
                       <button 
                         onClick={() => setFiles([])}
                         disabled={hasProcessing}
-                        className="text-xs text-red-500 hover:text-red-700 font-medium"
+                        className="text-xs text-slate-400 hover:text-slate-200 font-medium"
                       >
                           Clear All
                       </button>
                   )}
               </div>
               
-              <div className="divide-y divide-slate-100 max-h-[400px] overflow-y-auto">
+              <div className="divide-y divide-slate-800 max-h-[400px] overflow-y-auto">
                   {files.map((fileState, index) => (
-                      <div key={`${fileState.file.name}-${index}`} className="p-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                           <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600 shrink-0">
+                      <div key={`${fileState.file.name}-${index}`} className={`p-4 flex items-start gap-4 transition-colors ${fileState.status === 'error' ? 'bg-red-900/5' : 'hover:bg-slate-800'}`}>
+                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 mt-1
+                                ${fileState.status === 'error' ? 'bg-red-900/20 text-red-400' : 'bg-indigo-900/30 text-indigo-400'}
+                           `}>
                                <FileIcon className="w-5 h-5" />
                            </div>
                            
                            <div className="flex-grow min-w-0">
-                               <div className="font-medium text-slate-900 truncate">{fileState.file.name}</div>
-                               <div className="text-xs text-slate-500">{(fileState.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                               <div className="flex justify-between items-start">
+                                    <div className="font-medium text-slate-200 truncate pr-2">{fileState.file.name}</div>
+                               </div>
+                               <div className="text-xs text-slate-500 mt-0.5">{(fileState.file.size / 1024 / 1024).toFixed(2)} MB</div>
+                               
+                               {fileState.error && (
+                                   <div className="mt-2 text-xs text-red-400 bg-red-950/30 p-2 rounded border border-red-900/30 flex items-start">
+                                       <AlertCircle className="w-3 h-3 mr-1.5 mt-0.5 shrink-0" />
+                                       <span>{fileState.error}</span>
+                                   </div>
+                               )}
                            </div>
 
-                           <div className="shrink-0 flex items-center">
+                           <div className="shrink-0 flex items-center pt-2">
                                {fileState.status === 'pending' && (
-                                   <button onClick={() => handleRemoveFile(index)} className="text-slate-400 hover:text-red-500 p-2">
+                                   <button onClick={() => handleRemoveFile(index)} className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-slate-700">
                                        <Trash2 className="w-4 h-4" />
                                    </button>
                                )}
                                {fileState.status === 'processing' && (
-                                   <div className="flex items-center text-indigo-600 text-sm font-medium">
+                                   <div className="flex items-center text-indigo-400 text-sm font-medium">
                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Analyzing...
                                    </div>
                                )}
                                {fileState.status === 'success' && (
-                                   <div className="flex items-center text-emerald-600 text-sm font-medium bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                                   <div className="flex items-center text-emerald-400 text-sm font-medium bg-emerald-900/20 px-3 py-1 rounded-full border border-emerald-900/30">
                                        <CheckCircle className="w-4 h-4 mr-1.5" /> Done
                                    </div>
                                )}
                                {fileState.status === 'error' && (
-                                   <div className="flex items-center text-red-600 text-sm font-medium" title={fileState.error}>
-                                       <AlertCircle className="w-4 h-4 mr-1.5" /> Failed
+                                   <div className="flex flex-col items-end gap-2">
+                                       <button 
+                                            onClick={() => retryFile(index)}
+                                            className="flex items-center text-xs font-medium text-indigo-400 hover:text-indigo-300 bg-indigo-900/20 px-2 py-1 rounded hover:bg-indigo-900/40 border border-indigo-900/30 transition-all"
+                                       >
+                                           <RefreshCw className="w-3 h-3 mr-1.5" /> Retry
+                                       </button>
+                                       <button onClick={() => handleRemoveFile(index)} className="text-slate-600 hover:text-red-400 text-xs">
+                                           Remove
+                                       </button>
                                    </div>
                                )}
                            </div>
@@ -248,28 +304,34 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
               </div>
 
               {/* Action Bar */}
-              <div className="p-5 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+              <div className="p-5 border-t border-slate-700 bg-slate-800/50 flex justify-end gap-3">
                    {allSuccess ? (
                        <button
                          onClick={onClose}
-                         className="flex items-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-200 hover:shadow-emerald-300"
+                         className="flex items-center bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/30 hover:shadow-emerald-900/50"
                        >
                            Go to Dashboard <ArrowRight className="w-5 h-5 ml-2" />
                        </button>
                    ) : (
                        <button 
                         onClick={handleAnalyzeAll}
-                        disabled={hasProcessing || files.every(f => f.status === 'success')}
+                        disabled={hasProcessing || (files.length > 0 && files.every(f => f.status === 'success')) || files.length === 0}
                         className={`flex items-center px-8 py-3 rounded-xl font-bold text-white transition-all shadow-lg 
-                            ${hasProcessing || files.every(f => f.status === 'success')
-                                ? 'bg-slate-300 cursor-not-allowed' 
-                                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-1'
+                            ${hasProcessing || files.length === 0 || (files.every(f => f.status === 'success'))
+                                ? 'bg-slate-700 cursor-not-allowed text-slate-400' 
+                                : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-900/30 hover:shadow-indigo-900/50 hover:-translate-y-1'
                             }`}
                        >
                            {hasProcessing ? (
                                <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Processing...</>
                            ) : (
-                               <><Sparkles className="w-5 h-5 mr-2" /> Analyze {files.filter(f => f.status === 'pending').length} Documents</>
+                               <>
+                                {hasErrors ? (
+                                    <><RefreshCw className="w-5 h-5 mr-2" /> Retry Failed</>
+                                ) : (
+                                    <><Sparkles className="w-5 h-5 mr-2" /> Analyze {files.filter(f => f.status !== 'success').length} Documents</>
+                                )}
+                               </>
                            )}
                        </button>
                    )}
@@ -278,7 +340,7 @@ export const ContractUpload: React.FC<ContractUploadProps> = ({ user, onUploadCo
       )}
 
       {globalError && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center text-red-700 animate-slide-up shadow-sm">
+        <div className="mt-6 p-4 bg-red-900/20 border border-red-900/30 rounded-xl flex items-center text-red-400 animate-slide-up shadow-sm">
            <AlertCircle className="w-6 h-6 mr-3 shrink-0" />
            <span className="font-medium">{globalError}</span>
         </div>
